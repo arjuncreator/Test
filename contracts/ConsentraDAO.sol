@@ -75,6 +75,9 @@ contract ConsentraDAO is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(AI_OPERATOR_ROLE, msg.sender);
         _grantRole(PROPOSAL_CREATOR_ROLE, msg.sender);
+        
+        // Grant the DAO contract admin role on the metadata module
+        proposalMetadataModule.grantRole(proposalMetadataModule.DEFAULT_ADMIN_ROLE(), address(this));
     }
     
     function proposeWithMetadata(

@@ -8,6 +8,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ConsentraDAO.sol";
 import "./ConsentraGovernanceToken.sol";
 import "./SoulboundIdentityNFT.sol";
+import "./AIVotingModule.sol";
+import "./ProposalMetadataModule.sol";
+import "./AIOracle.sol";
 
 /**
  * @title DAOFactory
@@ -19,6 +22,7 @@ contract DAOFactory is Ownable {
     address public immutable daoImplementation;
     address public immutable tokenImplementation;
     SoulboundIdentityNFT public immutable identityNFT;
+    AIOracle public immutable aiOracle;
     
     struct DAOConfig {
         string name;
@@ -63,11 +67,13 @@ contract DAOFactory is Ownable {
     constructor(
         address _daoImplementation,
         address _tokenImplementation,
-        SoulboundIdentityNFT _identityNFT
+        SoulboundIdentityNFT _identityNFT,
+        AIOracle _aiOracle
     ) Ownable(msg.sender) {
         daoImplementation = _daoImplementation;
         tokenImplementation = _tokenImplementation;
         identityNFT = _identityNFT;
+        aiOracle = _aiOracle;
     }
     
     /**
@@ -110,10 +116,11 @@ contract DAOFactory is Ownable {
     }
     
     /**
-     * @dev Deploy governance token clone
+     * @dev Deploy governance token
      */
     function _deployToken() private returns (address) {
-        return tokenImplementation.clone();
+        ConsentraGovernanceToken token = new ConsentraGovernanceToken(address(this));
+        return address(token);
     }
     
     /**
@@ -136,11 +143,26 @@ contract DAOFactory is Ownable {
     }
     
     /**
-     * @dev Deploy DAO clone
+     * @dev Deploy DAO with all required modules
      */
     function _deployDAO() private returns (address) {
-        return daoImplementation.clone();
+        // Deploy supporting modules for this specific DAO
+        AIVotingModule aiVotingModule = new AIVotingModule(identityNFT, aiOracle);
+        ProposalMetadataModule proposalMetadataModule = new ProposalMetadataModule();
+        
+        // Deploy the DAO with all required parameters
+        ConsentraDAO dao = new ConsentraDAO(
+            ConsentraGovernanceToken(address(0)), // Will be set after token deployment
+            TimelockController(payable(address(0))), // Will be set after timelock deployment
+            identityNFT,
+            aiVotingModule,
+            proposalMetadataModule
+        );
+        
+        return address(dao);
     }
+    
+
     
     /**
      * @dev Setup roles for timelock and DAO
