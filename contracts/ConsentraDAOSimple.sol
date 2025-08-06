@@ -64,4 +64,8 @@ contract ConsentraDAOSimple is
     function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) {
         return super.proposalThreshold();
     }
+
+    function quorum(uint256 /* blockNumber */) public pure override returns (uint256) {
+        return 1; // Minimum quorum of 1 token for demonstration
+    }
 }
